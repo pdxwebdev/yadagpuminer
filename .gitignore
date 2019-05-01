@@ -1,0 +1,7 @@
+yadagpuminer
+*.o
+*.Po
+*.cache
+*.dirstamp
+Makefile
+.vscode/*
