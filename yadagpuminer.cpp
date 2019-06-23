@@ -1,6 +1,9 @@
+#define __STDC_FORMAT_MACROS // non needed in C, only in C++
+#include <stdlib.h>
 #include "common.h"
 
-
+#include <inttypes.h>
+#include <stdio.h>
 #include "uint256.h"
 #include "sha256.h"
 
@@ -127,13 +130,19 @@ best_hash_str find_best_nonce_gpu2(int device, std::string header,  uint64_t bat
 WorkResult mine(int batch_size, int block_size, int device, const Work& work, int share_difficulty)
 {
 	best_hash_str best_hash = find_best_nonce_gpu2(device, work.header, batch_size, block_size);
+	
 
 	WorkResult result;
 	result.hash_up64 = best_hash.hash_up64;
 	result.hash.from_array32((uint32_t*) best_hash.hash );
+	/*
+	log_debug("%" PRIu64, best_hash.hash_up64);
+	log_debug("%" PRIu64, work.target_up64);
+	log_debug("%" PRIu64, work.special_target_up64);
+	*/
 	result.nonce = best_hash.nonce;
-	result.found = (result.hash_up64 < work.target_up64);
-	result.share_found = (result.hash_up64 < (share_difficulty * work.target_up64));
+	result.found = (result.hash_up64 < work.target_up64) || (work.special_min && (result.hash_up64 < work.special_target_up64));
+	result.share_found = (result.hash_up64 < (share_difficulty * work.target_up64)) || (work.special_min && (result.hash_up64 < (share_difficulty * work.special_target_up64)));
 		
 	return result;
 }
@@ -145,8 +154,7 @@ Work getBenchmarkWork()
 	Work work;
 	work.header = "2155415885003fc7a89c59f094569435fe53e5c42daae6092e79e52baefb8ce3d081c58390e56493820000000004cf5d92b70274c17fc26108c3fa755fc7c6138c2245990dfbd20779{nonce}False5619147491189905241504060482922981236721380648793587878958993412092a01bcae5ed18d778d3c80c73b7ac84268751d7617667415b871166386362079";
 	work.target_up64 = 1000000000UL;
-	work.nonces[0] = 1000;
-	work.nonces[1] = 2000;
+	work.special_target_up64 = 1000000000UL;
 	work.special_min = false;
 	work.active = true;
 	return work;
@@ -174,7 +182,8 @@ void display_found_message(const Work& work, const WorkResult& result)
 	
 	log_debug("nonce       = %lu", result.nonce);
 	log_debug("hash        = %s", result.hash.GetHex().c_str());
-	log_debug("target_up64 = %016lx", work.target_up64);				
+	log_debug("target_up64 = %016lx", work.target_up64);
+	log_debug("special_target_up64 = %016lx", work.special_target_up64);
 
 }
 
@@ -188,7 +197,7 @@ void *miner_worker( void *ptr )
 
 		std::string lastHeader = newWork.header;
 
-		while (newWork.active && (newWork.header == lastHeader)) {
+		while ((newWork.active || newWork.special_active) && (newWork.header == lastHeader)) {
 
 			WorkResult result = mine( 			
 			 	thread->params.batch_size, thread->params.block_size, thread->gpu_index, newWork, thread->params.share_difficulty);
@@ -205,15 +214,12 @@ void *miner_worker( void *ptr )
 				if (result.address != "benchmark")
 					poolClient->sendResult(result);
 
-				if (!newWork.special_min)
+				found_shares_count++;
+				if (result.found)						
 				{
-					found_shares_count++;
-					if (result.found)						
-					{
-						found_count++;
-						newWork.active = false;
-						break;							
-					}
+					found_count++;
+					newWork.active = false;
+					break;							
 				}
 								
 			}
@@ -299,11 +305,12 @@ int main(int argc, char* argv[])
 	start_miner_threads(params);
 
 	std::string last_header = "";	
-  while(true)
+	while(true)
 	{
 		try
 		{
 			handleStat(newWork.target_up64);
+			handleStat(newWork.special_target_up64);
 			//receive work
 			if (params.address != "benchmark")
 				newWork = poolClient->getWork();							
@@ -311,7 +318,7 @@ int main(int argc, char* argv[])
 				newWork = getBenchmarkWork();
 			
 			//handle stats
-			if (newWork.active)
+			if (newWork.active || newWork.special_active)
 			{					
 				if (newWork.header != last_header)
 				{
@@ -320,6 +327,7 @@ int main(int argc, char* argv[])
 					log_debug("header      = %s", newWork.header.c_str());
 					log_debug("target_up64 = %016lx", newWork.target_up64);
 					log_debug("special_min = %d", newWork.special_min);
+					log_debug("special_target_up64 = %016lx", newWork.special_target_up64);
 
 					miningStat.reset();
 					last_header = newWork.header;

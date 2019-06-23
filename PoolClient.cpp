@@ -16,24 +16,28 @@ PoolClient::PoolClient(std::string poolAddress)
 Work PoolClient::getWork()
 {
 	Work work;
+	std::string url = poolAddress + "/pool";
 
 
 	std::string response = SimpleHttpClient::MakeGetRequest(poolAddress + "/pool");
 
 	Document document;
-	document.Parse<kParseNumbersAsStringsFlag>(response.c_str());
+	document.Parse(response.c_str());
 	
-  work.header = document["header"].GetString();
-	work.nonces[0] = atoll(document["nonces"][0].GetString());
-	work.nonces[1] = atoll(document["nonces"][1].GetString());
+  	work.header = document["header"].GetString();
 
 	mpz_class tmp;	
-	tmp.set_str(document["target"].GetString(), 10);
+	tmp.set_str(document["target"].GetString(), 16);
 	tmp >>= 192;
 	work.target_up64 = tmp.get_ui();
+	mpz_class tmp2;	
+	tmp2.set_str(document["special_target"].GetString(), 16);
+	tmp2 >>= 192;
+	work.special_target_up64 = tmp2.get_ui();
 
 	work.special_min = document["special_min"].GetBool();
 	work.active = (work.target_up64 < 0xffffffffffffffffUL);
+	work.special_active = (work.special_target_up64 < 0xffffffffffffffffUL);
 
 	return work;
 }
@@ -58,7 +62,7 @@ void PoolClient::sendResult(const WorkResult& result)
 	data.append(result.address);
 	data.append("\"");
 
-  data.append(" }");
+  	data.append(" }");
 	
 	log_debug(data.c_str());
 

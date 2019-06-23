@@ -33,6 +33,7 @@ nvidia-smi
 sudo apt install libcurl4-openssl-dev
 sudo apt install rapidjson-dev
 sudo apt install libgmp-dev
+sudo apt install g++-5
 ```
 
 4. Clone and compile

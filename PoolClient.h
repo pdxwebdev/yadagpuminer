@@ -8,9 +8,10 @@
 struct Work {
 	std::string header;
 	uint64_t target_up64;
-	uint64_t nonces[2];
+	uint64_t special_target_up64;
 	bool special_min;
 	bool active;
+	bool special_active;
 };
 
 struct WorkResult {

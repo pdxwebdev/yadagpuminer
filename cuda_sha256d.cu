@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <memory.h>
+#include "log.h"
 
 #include "cuda_helper.h"
 
@@ -478,12 +479,12 @@ void sha256d_hash_80(uint32_t threads, uint64_t startNonce, uint64_t* best_nonce
 	CUDA_SAFE_CALL(cudaMemset(best_nonce_gpu, 0xFF, sizeof(uint64_t)));
 	CUDA_SAFE_CALL(cudaMemset(best_value_gpu, 0xFF, sizeof(uint64_t)));
 
-	cudaThreadSynchronize();
+	cudaDeviceSynchronize();
 	sha256d_gpu_hash_shared <<<grid, block>>> (threads, startNonce, best_nonce_gpu, best_value_gpu);
 
 	CUDA_SAFE_CALL(cudaGetLastError());
 
-	cudaThreadSynchronize();
+	cudaDeviceSynchronize();
 
 	CUDA_SAFE_CALL(cudaMemcpy(best_nonce,best_nonce_gpu, sizeof(uint64_t), cudaMemcpyDeviceToHost));
 	CUDA_SAFE_CALL(cudaMemcpy(best_value,best_value_gpu, sizeof(uint64_t), cudaMemcpyDeviceToHost));
