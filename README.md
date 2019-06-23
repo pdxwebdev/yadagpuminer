@@ -67,7 +67,7 @@ cd yadagpuminer
 2. Start the miner with options for finding only full blocks. Bellow example:
 
 ```
-./yadagpuminer --address=YourYadacoinWalletAddress --gpu-devices=6 --pool-url=http://11.22.33.44:8000
+./yadagpuminer --address=YourYadacoinWalletAddress --gpu-devices=6 --pool-url=http://11.22.33.44
 ```
 
 Normally your rewards are collected by pool/node address so YourYadacoinWalletAddress isn't very important in this case.
@@ -78,7 +78,7 @@ Normally your rewards are collected by pool/node address so YourYadacoinWalletAd
 1. Start the miner with sending also shares with minimum difficulty 1/64 current target (you can experiment what is the best value).
 
 ```
-./yadagpuminer --address=YourYadacoinWalletAddress --gpu-devices=6 --pool-url=http://yadacoin.io:8000 --share-difficulty=64
+./yadagpuminer --address=YourYadacoinWalletAddress --gpu-devices=6 --pool-url=https://yadacoin.io --share-difficulty=64
 ```
 
 
