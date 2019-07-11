@@ -48,9 +48,9 @@ void PoolClient::sendResult(const WorkResult& result)
 
 	std::string data("{ ");
 
-	data.append("\"nonce\": ");
+	data.append("\"nonce\": \"");
 	data.append(std::to_string(result.nonce));
-	data.append(", ");
+	data.append("\", ");
 
 
 	data.append("\"hash\": \"");
